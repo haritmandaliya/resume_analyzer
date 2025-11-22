@@ -1050,8 +1050,14 @@ async def upload_file(file: UploadFile = File(...)):
         })
         
     except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
         print(f"Error uploading file: {e}")
-        return JSONResponse({"error": "Failed to upload file"}, status_code=500)
+        print(f"Traceback: {error_trace}")
+        return JSONResponse({
+            "error": f"Failed to upload file: {str(e)}",
+            "message": "File upload failed. Please check the file format and try again."
+        }, status_code=500)
 
 # API endpoint for batch analysis of multiple resumes
 @app.post("/api/batch-analyze/")

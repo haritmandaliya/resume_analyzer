@@ -1212,88 +1212,88 @@ async def process_input(
 
         # 📂 Handle Resume
         if file:
-        filename = file.filename
-        file_path = os.path.join("resumes", filename)
-        with open(file_path, "wb") as f:
-            f.write(await file.read())
+            filename = file.filename
+            file_path = os.path.join("resumes", filename)
+            with open(file_path, "wb") as f:
+                f.write(await file.read())
 
-        text = extract_resume_text(file_path)
-        extracted_info = {
-            "filename": filename,
-            "name": extract_name(text),
-            "email": extract_email(text),
-            "phone": extract_phone(text),
-            "skills": extract_skills(text),
-            "education": extract_education(text),
-            "experience": extract_experience(text),
-            "projects": extract_projects(text),
-            "extracted_text": text
-        }
-        
-        # Generate AI summaries for each section
-        if ENABLE_AI_SUMMARIES:
-            try:
-                extracted_info["education_summary"] = generate_education_summary(extracted_info["education"])
-                extracted_info["experience_summary"] = generate_experience_summary(extracted_info["experience"])
-                extracted_info["projects_summary"] = generate_projects_summary(extracted_info["projects"])
-            except Exception as e:
-                print(f"Error generating AI summaries: {e}")
-                extracted_info["education_summary"] = "Educational background analysis available."
-                extracted_info["experience_summary"] = "Work experience analysis available."
-                extracted_info["projects_summary"] = "Project analysis available."
-        else:
-            extracted_info["education_summary"] = "AI summaries disabled."
-            extracted_info["experience_summary"] = "AI summaries disabled."
-            extracted_info["projects_summary"] = "AI summaries disabled."
+            text = extract_resume_text(file_path)
+            extracted_info = {
+                "filename": filename,
+                "name": extract_name(text),
+                "email": extract_email(text),
+                "phone": extract_phone(text),
+                "skills": extract_skills(text),
+                "education": extract_education(text),
+                "experience": extract_experience(text),
+                "projects": extract_projects(text),
+                "extracted_text": text
+            }
+            
+            # Generate AI summaries for each section
+            if ENABLE_AI_SUMMARIES:
+                try:
+                    extracted_info["education_summary"] = generate_education_summary(extracted_info["education"])
+                    extracted_info["experience_summary"] = generate_experience_summary(extracted_info["experience"])
+                    extracted_info["projects_summary"] = generate_projects_summary(extracted_info["projects"])
+                except Exception as e:
+                    print(f"Error generating AI summaries: {e}")
+                    extracted_info["education_summary"] = "Educational background analysis available."
+                    extracted_info["experience_summary"] = "Work experience analysis available."
+                    extracted_info["projects_summary"] = "Project analysis available."
+            else:
+                extracted_info["education_summary"] = "AI summaries disabled."
+                extracted_info["experience_summary"] = "AI summaries disabled."
+                extracted_info["projects_summary"] = "AI summaries disabled."
 
             with open(os.path.join("resumes", filename.replace(".pdf", ".json")), "w") as f:
                 json.dump(extracted_info, f, indent=4)
 
         # 🧠 Handle JD
         if jd:
-        # Improve job description with AI
-        improved_jd = improve_job_description(jd)
-        
-        if extracted_info:
-            # Use AI for better analysis
-            ai_analysis = analyze_resume_with_ai(extracted_info["extracted_text"], improved_jd)
+            # Improve job description with AI
+            improved_jd = improve_job_description(jd)
             
-            if ai_analysis["match_score"] > 0:
-                match_score = ai_analysis["match_score"]
-                matched = ai_analysis["matched_skills"]
-                missing = ai_analysis["missing_skills"]
+            if extracted_info:
+                # Use AI for better analysis
+                ai_analysis = analyze_resume_with_ai(extracted_info["extracted_text"], improved_jd)
+                
+                if ai_analysis["match_score"] > 0:
+                    match_score = ai_analysis["match_score"]
+                    matched = ai_analysis["matched_skills"]
+                    missing = ai_analysis["missing_skills"]
+                else:
+                    # Fallback to traditional analysis
+                    jd_words = set(re.findall(r'\b[a-zA-Z]{3,}\b', improved_jd.lower()))
+                    resume_skills = set(skill.lower() for skill in extracted_info.get("skills", []))
+                    for word in jd_words:
+                        for skill in resume_skills:
+                            if fuzz.ratio(word, skill) >= 85:
+                                matched.append(skill)
+                                break
+                        else:
+                            missing.append(word)
+                    extra = list(resume_skills - set(matched))
+                    match_score = int((len(matched) / len(jd_words)) * 100) if jd_words else 0
+
+            # Save JD to JDhistory.json
+            jd_path = os.path.join("history/JDhistory", "jd_history.json")
+            if os.path.exists(jd_path):
+                with open(jd_path, "r") as f:
+                    history = json.load(f)
             else:
-                # Fallback to traditional analysis
-                jd_words = set(re.findall(r'\b[a-zA-Z]{3,}\b', improved_jd.lower()))
-                resume_skills = set(skill.lower() for skill in extracted_info.get("skills", []))
-                for word in jd_words:
-                    for skill in resume_skills:
-                        if fuzz.ratio(word, skill) >= 85:
-                            matched.append(skill)
-                            break
-                    else:
-                        missing.append(word)
-                extra = list(resume_skills - set(matched))
-                match_score = int((len(matched) / len(jd_words)) * 100) if jd_words else 0
+                history = []
 
-        # Save JD to JDhistory.json
-        jd_path = os.path.join("history/JDhistory", "jd_history.json")
-        if os.path.exists(jd_path):
-            with open(jd_path, "r") as f:
-                history = json.load(f)
-        else:
-            history = []
-
-        history.append({
-            "jd": improved_jd,
-            "original_jd": jd,
-            "filename": filename,
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "match_score": match_score,
-            "matched": matched,
-            "missing": missing,
-            "extra": extra
-        })
+            history.append({
+                "jd": improved_jd,
+                "original_jd": jd,
+                "filename": filename,
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "match_score": match_score,
+                "matched": matched,
+                "missing": missing,
+                "extra": extra
+            })
             with open(jd_path, "w") as f:
                 json.dump(history, f, indent=4)
 
@@ -1307,17 +1307,35 @@ async def process_input(
 
         # Return JSON response for React frontend
         return JSONResponse({
-        "filename": filename,
-        "match_score": match_score,
-        "matched": matched,
-        "missing": missing,
-        "extra": extra,
-        "resume_data": extracted_info,
-        "jd": improved_jd if jd else None,
-        "original_jd": jd,
-        "resume_list": sorted(resume_list),
-        "jd_list": jd_list
-    })
+            "filename": filename,
+            "match_score": match_score,
+            "matched": matched,
+            "missing": missing,
+            "extra": extra,
+            "resume_data": extracted_info,
+            "jd": improved_jd if jd else None,
+            "original_jd": jd,
+            "resume_list": sorted(resume_list),
+            "jd_list": jd_list
+        })
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"Error in process_input: {e}")
+        print(f"Traceback: {error_trace}")
+        return JSONResponse({
+            "error": f"Failed to process input: {str(e)}",
+            "filename": filename if 'filename' in locals() else None,
+            "match_score": None,
+            "matched": [],
+            "missing": [],
+            "extra": [],
+            "resume_data": {},
+            "jd": None,
+            "original_jd": jd if 'jd' in locals() else None,
+            "resume_list": [],
+            "jd_list": []
+        }, status_code=500)
 
 # API endpoint to get specific resume data
 @app.get("/api/resume/{filename}")

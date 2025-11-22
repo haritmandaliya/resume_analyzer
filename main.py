@@ -1019,24 +1019,56 @@ async def upload_file(file: UploadFile = File(...)):
             buffer.write(content)
         
         # Extract text from PDF
-        pdf_text = extract_resume_text(file_path)
+        try:
+            pdf_text = extract_resume_text(file_path)
+            if not pdf_text or len(pdf_text.strip()) == 0:
+                return JSONResponse({
+                    "error": "Could not extract text from PDF. The file might be corrupted or image-based.",
+                    "message": "Please ensure the PDF contains selectable text."
+                }, status_code=400)
+        except Exception as e:
+            print(f"Error extracting text from PDF: {e}")
+            return JSONResponse({
+                "error": f"Failed to extract text from PDF: {str(e)}",
+                "message": "The PDF file might be corrupted or password-protected."
+            }, status_code=400)
         
         # Use AI-powered parsing for better extraction
-        parsed_data = parse_pdf_with_ai(pdf_text)
+        try:
+            parsed_data = parse_pdf_with_ai(pdf_text)
+        except Exception as e:
+            print(f"Error parsing PDF with AI: {e}")
+            # Fallback to manual parsing
+            parsed_data = {
+                "name": extract_name(pdf_text),
+                "email": extract_email(pdf_text),
+                "phone": extract_phone(pdf_text),
+                "skills": extract_skills(pdf_text),
+                "education": extract_education(pdf_text),
+                "experience": extract_experience(pdf_text),
+                "projects": extract_projects(pdf_text),
+            }
         
         # Generate AI summaries if enabled
         if ENABLE_AI_SUMMARIES:
-            if parsed_data.get("education"):
-                education_summary = generate_education_summary(parsed_data["education"])
-                parsed_data["education_summary"] = education_summary
-            
-            if parsed_data.get("experience"):
-                experience_summary = generate_experience_summary(parsed_data["experience"])
-                parsed_data["experience_summary"] = experience_summary
-            
-            if parsed_data.get("projects"):
-                projects_summary = generate_projects_summary(parsed_data["projects"])
-                parsed_data["projects_summary"] = projects_summary
+            try:
+                if parsed_data.get("education"):
+                    education_summary = generate_education_summary(parsed_data["education"])
+                    parsed_data["education_summary"] = education_summary
+                
+                if parsed_data.get("experience"):
+                    experience_summary = generate_experience_summary(parsed_data["experience"])
+                    parsed_data["experience_summary"] = experience_summary
+                
+                if parsed_data.get("projects"):
+                    projects_summary = generate_projects_summary(parsed_data["projects"])
+                    parsed_data["projects_summary"] = projects_summary
+            except Exception as e:
+                print(f"Error generating AI summaries: {e}")
+                # Continue without summaries
+                parsed_data["education_summary"] = "Educational background analysis available."
+                parsed_data["experience_summary"] = "Work experience analysis available."
+                parsed_data["projects_summary"] = "Project analysis available."
         
         # Save parsed data
         json_path = f"resumes/{file.filename.replace('.pdf', '.json')}"

@@ -1195,17 +1195,20 @@ async def process_input(
     jd: str = Form(None),
     file: UploadFile = File(None)
 ):
-    resume_list = []
-    jd_list = []
-    filename = None
-    match_score = None
-    matched = []
-    missing = []
-    extra = []
-    extracted_info = {}
+    """Process resume upload and/or job description analysis"""
+    try:
+        resume_list = []
+        jd_list = []
+        filename = None
+        match_score = None
+        matched = []
+        missing = []
+        extra = []
+        extracted_info = {}
+        improved_jd = None
 
-    os.makedirs("resumes", exist_ok=True)
-    os.makedirs("history/JDhistory", exist_ok=True)
+        os.makedirs("resumes", exist_ok=True)
+        os.makedirs("history/JDhistory", exist_ok=True)
 
     # 📂 Handle Resume
     if file:

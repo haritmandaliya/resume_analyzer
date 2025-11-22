@@ -1210,8 +1210,8 @@ async def process_input(
         os.makedirs("resumes", exist_ok=True)
         os.makedirs("history/JDhistory", exist_ok=True)
 
-    # 📂 Handle Resume
-    if file:
+        # 📂 Handle Resume
+        if file:
         filename = file.filename
         file_path = os.path.join("resumes", filename)
         with open(file_path, "wb") as f:
@@ -1246,11 +1246,11 @@ async def process_input(
             extracted_info["experience_summary"] = "AI summaries disabled."
             extracted_info["projects_summary"] = "AI summaries disabled."
 
-        with open(os.path.join("resumes", filename.replace(".pdf", ".json")), "w") as f:
-            json.dump(extracted_info, f, indent=4)
+            with open(os.path.join("resumes", filename.replace(".pdf", ".json")), "w") as f:
+                json.dump(extracted_info, f, indent=4)
 
-    # 🧠 Handle JD
-    if jd:
+        # 🧠 Handle JD
+        if jd:
         # Improve job description with AI
         improved_jd = improve_job_description(jd)
         
@@ -1294,19 +1294,19 @@ async def process_input(
             "missing": missing,
             "extra": extra
         })
-        with open(jd_path, "w") as f:
-            json.dump(history, f, indent=4)
+            with open(jd_path, "w") as f:
+                json.dump(history, f, indent=4)
 
-    for f in os.listdir("resumes"):
-        if f.endswith(".json"):
-            resume_list.append(f.replace(".json", ".pdf"))
+        for f in os.listdir("resumes"):
+            if f.endswith(".json"):
+                resume_list.append(f.replace(".json", ".pdf"))
 
-    if os.path.exists("history/JDhistory/jd_history.json"):
-        with open("history/JDhistory/jd_history.json") as f:
-            jd_list = [entry["jd"] for entry in json.load(f)]
+        if os.path.exists("history/JDhistory/jd_history.json"):
+            with open("history/JDhistory/jd_history.json") as f:
+                jd_list = [entry["jd"] for entry in json.load(f)]
 
-    # Return JSON response for React frontend
-    return JSONResponse({
+        # Return JSON response for React frontend
+        return JSONResponse({
         "filename": filename,
         "match_score": match_score,
         "matched": matched,

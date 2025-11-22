@@ -14,6 +14,7 @@ import {
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { SidebarProps } from '../types';
+import { API_ENDPOINTS } from '../config/api';
 
 const Sidebar: React.FC<SidebarProps> = ({ currentView, setCurrentView, setData, onClose }) => {
   const [resumeList, setResumeList] = useState<string[]>([]);
@@ -28,11 +29,11 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setCurrentView, setData,
     setLoading(true);
     try {
       // Fetch resume list
-      const resumeResponse = await axios.get('http://localhost:8000/api/resumes');
+      const resumeResponse = await axios.get(API_ENDPOINTS.RESUMES);
       setResumeList(resumeResponse.data.resumes || []);
 
       // Fetch JD history
-      const jdResponse = await axios.get('http://localhost:8000/api/jd-history');
+      const jdResponse = await axios.get(API_ENDPOINTS.JD_HISTORY);
       setJdHistory(jdResponse.data.jd_list || []);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -49,7 +50,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setCurrentView, setData,
 
   const handleResumeClick = async (filename: string) => {
     try {
-      const response = await axios.get(`http://localhost:8000/api/resume/${encodeURIComponent(filename)}`);
+      const response = await axios.get(API_ENDPOINTS.RESUME(filename));
       setData(response.data);
       setCurrentView('resume-details');
       onClose();

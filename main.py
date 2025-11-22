@@ -24,12 +24,34 @@ from utils.resume_parser import (
 app = FastAPI(title="Resume Analyzer API", version="1.0.0")
 
 # CORS middleware for React frontend
+# Allow all common development ports and production
+# In production, replace "*" with specific allowed origins
+allowed_origins = [
+    "http://localhost:3000",
+    "http://localhost:4000",
+    "http://localhost:5173",
+    "http://localhost:8000",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:4000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:8000",
+]
+
+# For development, allow all origins
+# In production, use specific origins only
+import os
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+if ENVIRONMENT == "development":
+    allowed_origins.append("*")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for production
+    allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=3600,
 )
 
 # Serve React build files
@@ -42,6 +64,18 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # Configuration
 import os
+from pathlib import Path
+
+# Load .env file if it exists
+env_file = Path(".env")
+if env_file.exists():
+    with open(env_file, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#') and '=' in line:
+                key, value = line.split('=', 1)
+                os.environ[key.strip()] = value.strip()
+
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")  # Set via environment variable
 GROQ_BASE_URL = "https://api.groq.com/openai/v1"
 GROQ_MODEL = "llama-3.1-8b-instant"  # Fast and capable model
@@ -49,6 +83,12 @@ ENABLE_AI_SUMMARIES = True  # Enable AI summaries with Groq
 
 def call_groq(prompt, system_prompt="", max_tokens=500):
     """Call Groq API with optimized settings for fast, reliable responses"""
+    # Check if API key is configured
+    if not GROQ_API_KEY or GROQ_API_KEY == "":
+        print("⚠️  Groq API key not configured. AI features will be disabled.")
+        print("💡 Set GROQ_API_KEY environment variable or create .env file")
+        return None
+    
     try:
         url = f"{GROQ_BASE_URL}/chat/completions"
         headers = {
@@ -965,6 +1005,7 @@ async def improve_jd(job_description: str = Form(...)):
 
 # API endpoint to upload a single resume
 @app.post("/api/upload")
+@app.post("/api/upload-resume/")  # Alias for frontend compatibility
 async def upload_file(file: UploadFile = File(...)):
     """Upload and parse PDF resume with AI-powered extraction"""
     try:

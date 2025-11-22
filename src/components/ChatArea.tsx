@@ -17,6 +17,7 @@ import { useDropzone } from 'react-dropzone';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { ChatAreaProps, ResumeData } from '../types';
+import { API_ENDPOINTS } from '../config/api';
 
 interface ChatMessage {
   id: string;
@@ -107,7 +108,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ setCurrentView }) => {
 
   const fetchAllPdfFiles = async (): Promise<void> => {
     try {
-      const response = await axios.get('http://localhost:8000/api/resumes');
+      const response = await axios.get(API_ENDPOINTS.RESUMES);
       setAllPdfFiles(response.data.resumes || []);
     } catch (error) {
       console.error('Error fetching PDF files:', error);
@@ -148,7 +149,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ setCurrentView }) => {
       formData.append('message', userInput);
       formData.append('context', 'resume_analyzer');
       
-      const response = await axios.post('http://localhost:8000/api/smart-chat', formData);
+      const response = await axios.post(API_ENDPOINTS.SMART_CHAT, formData);
       
       addMessage({
         type: 'smart-ai-message',
@@ -249,7 +250,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ setCurrentView }) => {
       const formData = new FormData();
       formData.append('file', file);
       
-      const response = await axios.post('http://localhost:8000/api/upload-resume/', formData, {
+      const response = await axios.post(API_ENDPOINTS.UPLOAD_RESUME, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -273,7 +274,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ setCurrentView }) => {
     // Get all available PDFs and analyze them against the job description
     const analysisPromises = allPdfFiles.map(async (filename) => {
       try {
-        const response = await axios.get(`http://localhost:8000/api/resume/${encodeURIComponent(filename)}`);
+        const response = await axios.get(API_ENDPOINTS.RESUME(filename));
         const resumeData = response.data;
         
         // Simple analysis logic
@@ -326,7 +327,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ setCurrentView }) => {
       formData.append('jd', jd);
       formData.append('file', uploadedFiles[0]);
       
-      const response = await axios.post('http://localhost:8000/api/process_input/', formData, {
+      const response = await axios.post(API_ENDPOINTS.PROCESS_INPUT, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -345,7 +346,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ setCurrentView }) => {
         formData.append('files', file);
       });
       
-      const response = await axios.post('http://localhost:8000/api/batch-analyze/', formData, {
+      const response = await axios.post(API_ENDPOINTS.BATCH_ANALYZE, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -361,7 +362,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ setCurrentView }) => {
 
   const handleResumeSelect = async (filename: string) => {
     try {
-      const response = await axios.get(`http://localhost:8000/api/resume-analysis/${encodeURIComponent(filename)}`);
+      const response = await axios.get(API_ENDPOINTS.RESUME_ANALYSIS(filename));
       setSelectedResume(response.data.resume_data);
       
       addMessage({

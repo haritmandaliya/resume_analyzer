@@ -5,6 +5,7 @@ import { useDropzone } from 'react-dropzone';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { FileUploadProps, AnalysisResult, BatchAnalysisResult } from '../types';
+import { API_ENDPOINTS } from '../config/api';
 
 const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded, onAnalysisComplete, setCurrentView }) => {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -47,7 +48,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded, onAnalysisComp
         const formData = new FormData();
         formData.append('file', file);
         
-        const response = await axios.post('http://localhost:8000/api/upload-resume/', formData, {
+        const response = await axios.post(API_ENDPOINTS.UPLOAD_RESUME, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
@@ -85,7 +86,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded, onAnalysisComp
         formData.append('jd', jobDescription);
         formData.append('file', uploadedFiles[0]);
         
-        const response = await axios.post('http://localhost:8000/api/process_input/', formData, {
+        const response = await axios.post(API_ENDPOINTS.PROCESS_INPUT, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
@@ -101,7 +102,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFilesUploaded, onAnalysisComp
           formData.append('files', file);
         });
         
-        const response = await axios.post('http://localhost:8000/api/batch-analyze/', formData, {
+        const response = await axios.post(API_ENDPOINTS.BATCH_ANALYZE, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
